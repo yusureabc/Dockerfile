@@ -26,15 +26,13 @@ RUN apt-get update && \
 RUN echo "PRC" > /etc/timezone && \
     dpkg-reconfigure -f noninteractive tzdata
 
-# configure php-fpm as non-daemon
-RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/5.6/fpm/php-fpm.conf && \
-    sed -i -e "s/;clear_env\s*=\s*no/clear_env = no/g" /etc/php/5.6/fpm/pool.d/www.conf && \
-    sed -i 's#short_open_tag = Off#short_open_tag = On#' /etc/php/5.6/fpm/php.ini && \
-    sed -i "s/;date.timezone\s*=\s*/date.timezone = PRC/g" /etc/php/5.6/fpm/php.ini
-
 # clear apt cache and remove unnecessary packages
 RUN apt-get autoclean && apt-get -y autoremove
 
+# PHP config
+COPY ./php-fpm.conf /etc/php/5.6/fpm/php-fpm.conf
+COPY ./www.conf /etc/php/5.6/fpm/pool.d/www.conf
+COPY ./php.ini /etc/php/5.6/fpm/php.ini
 
 # copy local defualt config file for NGINX
 COPY ./nginx.conf /etc/nginx/nginx.conf
