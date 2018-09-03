@@ -15,9 +15,10 @@ RUN set -x && \
     libtool \
     make \
     cmake && \
-#Install PHP library
+
+# Install PHP library
 ## libmcrypt-devel DIY
-   rpm -ivh http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm && \
+    rpm -ivh http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm && \
     yum install -y zlib \
     zlib-devel \
     openssl \
@@ -33,14 +34,17 @@ RUN set -x && \
     libmcrypt-devel \
     openssh-server \
     python-setuptools && \
-#Add user
+
+# Add user
     mkdir -p /data/{www,phpextini,phpextfile} && \
     useradd -r -s /sbin/nologin -d /data/www -m -k no www && \
-#Download nginx & php
+
+# Download nginx & php
     mkdir -p /home/nginx-php && cd $_ && \
     curl -Lk http://192.168.48.128/nginx-$NGINX_VERSION.tar.gz | gunzip | tar x -C /home/nginx-php && \
     curl -Lk http://192.168.48.128/php-$PHP_VERSION.tar.gz | gunzip | tar x -C /home/nginx-php && \
-#Make install nginx
+
+# Make install nginx
     cd /home/nginx-php/nginx-$NGINX_VERSION && \
     ./configure --prefix=/usr/local/nginx \
     --user=www --group=www \
@@ -53,7 +57,8 @@ RUN set -x && \
     --without-mail_imap_module \
     --with-http_gzip_static_module && \
     make && make install && \
-#Make install php
+
+# Make install php
     cd /home/nginx-php/php-$PHP_VERSION && \
     ./configure --prefix=/usr/local/php \
     --with-config-file-path=/usr/local/php/etc \
@@ -95,13 +100,21 @@ RUN set -x && \
     --enable-fileinfo \
     --disable-rpath \
     --enable-ipv6 \
+    --enable-swoole \
     --disable-debug \
     --without-pear && \
     make && make install && \
-#Install supervisor
-    easy_install supervisor && \
-    mkdir -p /var/{log/supervisor,run/{sshd,supervisord}} && \
-#Clean OS
+
+# Install Swoole
+mkdir -p /home/extension && cd $_ && \
+curl -Lk http://192.168.48.128/swoole-src-4.0.4.tar.gz | gunzip | tar x -C /home/extension && \
+cd /home/extension/swoole-src-4.0.4 && \
+/usr/local/php/bin/phpize && \
+./configure \
+--with-php-config=/usr/local/php/bin/php-config && \
+make clean && make && make install && \
+
+# Clean OS
     yum remove -y gcc \
     gcc-c++ \
     autoconf \
@@ -118,32 +131,30 @@ RUN set -x && \
 # timezone #
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 
-#Change Mod from webdir
+# Change Mod from webdir
     chown -R www:www /data/www
 
-#Install php-fpm
+# Install php-fpm
 COPY ./conf/php.ini /usr/local/php/etc/php.ini
 COPY ./conf/php-fpm.conf /usr/local/php/etc/php-fpm.conf
 COPY ./conf/www.conf /usr/local/php/etc/php-fpm.d/www.conf
 
-#Add supervisord conf
-ADD ./conf/supervisord.conf /etc/
-
-#Update nginx config
+# Update nginx config
 ADD ./conf/nginx.conf /usr/local/nginx/conf/
+ADD ./conf/default.conf /usr/local/nginx/conf/vhost/
 
 # Add VI config
 ADD ./conf/virc /etc/virc
 
-#Start
+# Start
 ADD ./conf/start.sh /
 RUN chmod +x /start.sh
 
-#Set port
+# Set port
 EXPOSE 80 443
 
-#Start it
-ENTRYPOINT ["/start.sh"]
+# Start it
+# ENTRYPOINT ["/start.sh"]
 
-#Start web server
-#CMD ["/bin/bash", "/start.sh"]
+# Start web server
+CMD ["/bin/bash", "/start.sh"]

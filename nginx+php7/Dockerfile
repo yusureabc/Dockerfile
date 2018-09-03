@@ -2,7 +2,10 @@ FROM centos:7
 MAINTAINER Skiychan <dev@skiy.net>
 
 ENV NGINX_VERSION 1.14.0
-ENV PHP_VERSION 7.2.5
+ENV PHP_VERSION 7.2.9
+
+# 国内阿里源 #
+COPY ./conf/Centos-7.repo /etc/yum.repos.d/CentOS-Base.repo
 
 RUN set -x && \
     yum install -y gcc \
@@ -107,6 +110,7 @@ RUN set -x && \
     make \
     cmake && \
     yum clean all && \
+    yum -y update && \
     rm -rf /tmp/* /var/cache/{yum,ldconfig} /etc/my.cnf{,.d} && \
     mkdir -p --mode=0755 /var/cache/{yum,ldconfig} && \
     find /var/log -type f -delete && \
@@ -143,4 +147,3 @@ ENTRYPOINT ["/start.sh"]
 
 #Start web server
 #CMD ["/bin/bash", "/start.sh"]
-
